@@ -1,0 +1,31 @@
+detection_rules:
+  patterns:
+    contact:
+      - "contact"
+      - "details"
+      - "personal"
+    summary:
+      - "summary"
+      - "objective"
+      - "profile"
+    skills:
+      - "skills"
+      - "competencies"
+      - "technical"
+    education:
+      - "education"
+      - "academic"
+      - "degrees"
+    experience:
+      - "experience"
+      - "employment"
+      - "work history"
+    projects:
+      - "projects"
+      - "portfolio"
+    certifications:
+      - "certifications"
+      - "licenses"
+      - "credentials"
+  confidence_threshold: 0.6
+  min_heading_size: 11

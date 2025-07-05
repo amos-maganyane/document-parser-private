@@ -1,0 +1,23 @@
+{
+    "Software Engineer": [
+        "SW Engineer",
+        "Software Developer",
+        "Dev"
+    ],
+    "Senior Software Engineer": [
+        "Sr. Software Engineer",
+        "Staff Software Engineer"
+    ],
+    "Product Manager": [
+        "PM",
+        "Product Owner"
+    ],
+    "Data Scientist": [
+        "Machine Learning Engineer",
+        "AI Researcher"
+    ],
+    "DevOps Engineer": [
+        "Site Reliability Engineer",
+        "Infrastructure Engineer"
+    ]
+}

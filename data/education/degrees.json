@@ -1,0 +1,29 @@
+{
+    "Bachelor of Science": [
+        "B.S.",
+        "BS",
+        "BSc",
+        "B.Sc",
+        "Bachelor's in Science"
+    ],
+    "Bachelor of Arts": [
+        "B.A.",
+        "BA",
+        "Bachelor of Arts"
+    ],
+    "Master of Science": [
+        "M.S.",
+        "MS",
+        "MSc",
+        "M.Sc"
+    ],
+    "Master of Business Administration": [
+        "MBA",
+        "M.B.A."
+    ],
+    "Doctor of Philosophy": [
+        "PhD",
+        "Ph.D.",
+        "DPhil"
+    ]
+}

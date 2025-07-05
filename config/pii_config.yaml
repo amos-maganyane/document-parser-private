@@ -1,0 +1,12 @@
+detection_rules:
+  email:
+    - r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+  phone:
+    - r'\b(?:\+\d{1,2}\s?)?(?:\(\d{3}\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b'
+  ssn:
+    - r'\b\d{3}[-]?\d{2}[-]?\d{4}\b'
+  address:
+    - r'\b\d{1,5}\s[\w\s]{1,20}(?:street|st|avenue|ave|road|rd|lane|ln|drive|dr|boulevard|blvd)\b'
+
+replacement_strategy: "hash"
+hash_salt: "company_secret_salt_123"
