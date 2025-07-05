@@ -1,9 +1,104 @@
 {
-  "contact": {},
+  "contact": {
+    "name": "",
+    "phone": "",
+    "email": "",
+    "linkedin": "",
+    "github": ""
+  },
   "summary": "",
-  "skills": [],
-  "education": [],
-  "experience": [],
+  "skills": [
+    "JUnit",
+    "Maven",
+    "Git",
+    "Javascript.",
+    "Github Actions",
+    "Docker",
+    "Scrum",
+    "Concurrency",
+    "Apache Kafta",
+    "Mobile development",
+    "MVC",
+    "Flutter",
+    "Angular",
+    "Test Driven Development",
+    "API development",
+    "Linux",
+    "GitLab CI",
+    "Retrospectives",
+    "Python",
+    "Dart",
+    "Spring Boot",
+    "Unittest",
+    "Microservices",
+    "Concurrent Systems",
+    "Sprint Planning",
+    "Kanban"
+  ],
+  "education": [
+    {
+      "institution": "",
+      "degree": "",
+      "field_of_study": "",
+      "start_date": null,
+      "end_date": null,
+      "description": "",
+      "achievements": []
+    },
+    {
+      "institution": "",
+      "degree": "",
+      "field_of_study": "",
+      "start_date": null,
+      "end_date": null,
+      "description": "",
+      "achievements": []
+    }
+  ],
+  "experience": [
+    {
+      "company": "",
+      "position": "",
+      "start_date": null,
+      "end_date": null,
+      "description": "",
+      "technologies": []
+    },
+    {
+      "company": "",
+      "position": "",
+      "start_date": null,
+      "end_date": null,
+      "description": "",
+      "technologies": []
+    },
+    {
+      "company": "",
+      "position": "",
+      "start_date": null,
+      "end_date": null,
+      "description": "",
+      "technologies": []
+    },
+    {
+      "company": "",
+      "position": "",
+      "start_date": null,
+      "end_date": null,
+      "description": "",
+      "technologies": []
+    },
+    {
+      "company": "",
+      "position": "",
+      "start_date": null,
+      "end_date": null,
+      "description": "",
+      "technologies": []
+    }
+  ],
   "projects": [],
-  "certifications": []
+  "certifications": [
+    "HackerRank Certifications: Java (Basic), Problem Solving with Java (Intermediate) 2024 Medallion - WeThinkCode Systems Development Semester 1 & 2 Top 10 Performer 2024"
+  ]
 }

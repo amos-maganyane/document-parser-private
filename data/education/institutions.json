@@ -1,1 +1,7 @@
-{"University of Technology": ["Tech Univ", "Uni of Tech"]}
+{
+  "University of Technology": ["Tech Univ", "Uni of Tech"],
+  "University of the People": ["UoPeople"],
+  "WeThinkCode": ["WethinkCode", "WeThinkCode_"],
+  "University of Cape Town": ["UCT"],
+  "Makhosini Combined Secondary School": ["Makhosini Secondary"]
+}

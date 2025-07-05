@@ -1,28 +1,47 @@
 import pdfplumber
 import fitz  # PyMuPDF
 import re
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 from .layout_analyzer import LayoutAnalyzer
 from .section_detector import SectionDetector
 import logging
+import yaml  # Make sure to import yaml
 
 class PDFParser:
     def __init__(self, config: Dict):
         self.use_ocr = config.get("use_ocr", False)
         self.layout_analysis = config.get("layout_analysis", True)
-        self.section_detector = SectionDetector(config.get("section_rules", {}))
-        self.layout_analyzer = LayoutAnalyzer()
         
-    def parse(self, file_path: str) -> Dict:
+        # Load section rules if it's a file path
+        section_rules = config.get("section_rules", {})
+        if isinstance(section_rules, str):
+            try:
+                with open(section_rules, 'r') as f:
+                    section_rules = yaml.safe_load(f)
+            except Exception as e:
+                logging.error(f"Failed to load section rules: {str(e)}")
+                section_rules = {}
+    
+        self.section_detector = SectionDetector(section_rules)
+        self.layout_analyzer = LayoutAnalyzer()
+        self.logger = logging.getLogger(__name__)
+        
+    def parse(self, file_path: str) -> Dict[str, Any]:
+        self.logger.debug(f"Starting PDF parsing: {file_path}")
         # First pass: Text extraction
         text_data = self._extract_text(file_path)
+        self.logger.debug(f"Extracted text data: {text_data}")
         
         # Second pass: Layout analysis
         if self.layout_analysis:
             layout_data = self._analyze_layout(file_path)
+            self.logger.debug(f"Layout analysis: {layout_data}")
             combined = self._integrate_layout(text_data, layout_data)
-            return self.section_detector.detect_sections(combined)
-        
+            self.logger.debug(f"Combined data: {combined}")
+            result = self.section_detector.detect_sections(combined)
+            self.logger.debug(f"Final sections: {result}")
+            return result
+
         return text_data
     
     def _extract_text(self, file_path: str) -> Dict:
@@ -66,23 +85,41 @@ class PDFParser:
             "metadata": text_data["metadata"]
         }
         
-        # Create content blocks with layout metadata
-        for block in layout_data.get("text_blocks", []):
+        # Add content blocks with layout metadata
+        for block in layout_data.get("blocks", []):
+            if not block.get("text", "").strip():
+                continue
+            
+            # Get font info
+            font_size = block.get("font_summary", {}).get("dominant_size", 10)
+            font_name = block.get("font_summary", {}).get("dominant_font", "")
+            
+            # Check if heading by font characteristics
+            is_heading = (
+                font_size >= 12 or 
+                font_name.startswith("CMBX") or
+                any(word.strip().isupper() for word in block["text"].split())
+            )
+            
             integrated["content"].append({
                 "text": block["text"],
-                "type": "text",
-                "position": block["position"],
-                "font": block["font"]
+                "type": "heading" if is_heading else "text",
+                "position": block.get("bbox", []),
+                "font": {
+                    "size": font_size,
+                    "name": font_name
+                }
             })
         
-        # Add tables
+        # Add tables if any
         for table in text_data.get("tables", []):
-            integrated["content"].append({
-                "type": "table",
-                "data": table["data"],
-                "page": table["page"]
-            })
-            
+            if table.get("data"):
+                integrated["content"].append({
+                    "type": "table",
+                    "data": table["data"],
+                    "page": table["page"]
+                })
+        
         return integrated
     
     def _fallback_to_ocr(self, file_path: str) -> Dict:

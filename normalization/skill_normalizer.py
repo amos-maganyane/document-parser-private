@@ -3,6 +3,7 @@ import json
 from rapidfuzz import fuzz, process
 from typing import Dict, List, Optional
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -33,18 +34,24 @@ class SkillNormalizer:
         return index
     
     def normalize(self, skill: Optional[str]) -> Optional[str]:
+        """Normalize a single skill"""
         logger.debug(f"Normalizing skill: {skill}")
-        if skill is None:
+        if skill is None or not isinstance(skill, str):
             return None
-        if skill == "":  # Handle empty string
+        if not skill.strip():
             return ""
-            
+
+        # Remove common prefixes/suffixes
+        skill = re.sub(r'^(Languages|Tools|Frameworks|Libraries):\s*', '', skill)
+        skill = re.sub(r'\([^)]*\)', '', skill)  # Remove parentheticals
+        skill = skill.strip()
+        
         # Case-insensitive exact match
         if skill.lower() in self.lower_index:
             original_case = self.lower_index[skill.lower()]
             return self._get_canonical(original_case)
         
-        # Fuzzy match
+        # Try fuzzy matching
         result = process.extractOne(
             skill, 
             self.skill_index, 
@@ -55,7 +62,8 @@ class SkillNormalizer:
         if result:
             match, score, _ = result
             return self._get_canonical(match)
-        return skill  # Return original for no match
+        
+        return skill
     
     def normalize_list(self, skills: List[Optional[str]]) -> List[Optional[str]]:
         normalized_skills = set()

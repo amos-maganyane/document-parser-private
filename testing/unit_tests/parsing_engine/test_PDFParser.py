@@ -146,14 +146,22 @@ class TestPDFParser:
         mock_analyze.return_value = {"layout": "data"}
         mock_integrate.return_value = {"integrated": "data"}
         
-        # Mock section detector
-        parser.section_detector.detect_sections = MagicMock(return_value="final")
+        # Mock section detector with correct structure
+        expected_result = {
+            "sections": {
+                "summary": {"content": "text"},
+                "experience": {"content": "data"}
+            },
+            "raw": "text",
+            "metadata": {}
+        }
+        parser.section_detector.detect_sections = MagicMock(return_value=expected_result)
         
         # Execute
         result = parser.parse("dummy.pdf")
         
         # Verify
-        assert result == "final"
+        assert result == expected_result
         mock_extract.assert_called_once_with("dummy.pdf")
         mock_analyze.assert_called_once_with("dummy.pdf")
         mock_integrate.assert_called_with({"raw_text": "text"}, {"layout": "data"})
@@ -257,8 +265,12 @@ class TestPDFParser:
         # Mock layout analyzer to avoid file access
         parser.layout_analyzer.analyze = MagicMock(return_value={"pages": []})
         
-        # Mock section detector
-        mock_section_result = {"sections": []}
+        # Mock section detector with correct structure
+        mock_section_result = {
+            "sections": {},  # Change from [] to {}
+            "raw": "",
+            "metadata": {}
+        }
         parser.section_detector.detect_sections = MagicMock(return_value=mock_section_result)
         
         # Execute

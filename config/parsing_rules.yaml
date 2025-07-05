@@ -1,31 +1,42 @@
 detection_rules:
   patterns:
     contact:
-      - "contact"
-      - "details"
-      - "personal"
+      - "^[A-Z\\s]+$"  # Name in caps
+      - "\\d{3}[-.]\\d{3}[-.]\\d{4}"  # Phone
+      - "\\b[\\w\\.-]+@[\\w\\.-]+\\.[\\w]{2,4}\\b"  # Email
+      - "linkedin\\.com"
+      - "github\\.com"
     summary:
       - "summary"
-      - "objective"
       - "profile"
+      - "objective"
     skills:
+      - "technical skills"
       - "skills"
       - "competencies"
-      - "technical"
+      - "technologies"
+      - "tools & ci/cd"
+      - "languages"
+      - "frameworks"
     education:
       - "education"
       - "academic"
-      - "degrees"
+      - "university"
+      - "college"
+      - "school"
     experience:
       - "experience"
       - "employment"
-      - "work history"
+      - "(software|java|python) developer"
+      - "technical mentor"
+      - "trainee"
     projects:
+      - "technical projects"
       - "projects"
       - "portfolio"
     certifications:
+      - "achievements & certifications"
       - "certifications"
-      - "licenses"
-      - "credentials"
+      - "certificates"
   confidence_threshold: 0.6
   min_heading_size: 11

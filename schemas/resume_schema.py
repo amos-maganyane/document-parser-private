@@ -4,11 +4,12 @@ from datetime import date
 
 class Education(BaseModel):
     institution: str
-    degree: str
+    degree: Optional[str] = None
     field_of_study: Optional[str] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     description: Optional[str] = None
+    achievements: Optional[List[str]] = []
 
 class Experience(BaseModel):
     company: str

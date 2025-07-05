@@ -1,10 +1,9 @@
 {
     "Bachelor of Science": [
-        "B.S.",
         "BS",
         "BSc",
-        "B.Sc",
-        "Bachelor's in Science"
+        "B.S.",
+        "B.Sc."
     ],
     "Bachelor of Arts": [
         "B.A.",
@@ -25,5 +24,13 @@
         "PhD",
         "Ph.D.",
         "DPhil"
+    ],
+    "National Certificate": [
+        "NC",
+        "Nat. Cert."
+    ],
+    "National Senior Certificate": [
+        "NSC",
+        "Matric"
     ]
 }
