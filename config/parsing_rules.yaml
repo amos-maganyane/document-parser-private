@@ -1,42 +1,111 @@
 detection_rules:
   patterns:
-    contact:
-      - "^[A-Z\\s]+$"  # Name in caps
-      - "\\d{3}[-.]\\d{3}[-.]\\d{4}"  # Phone
-      - "\\b[\\w\\.-]+@[\\w\\.-]+\\.[\\w]{2,4}\\b"  # Email
-      - "linkedin\\.com"
-      - "github\\.com"
-    summary:
-      - "summary"
-      - "profile"
-      - "objective"
-    skills:
-      - "technical skills"
-      - "skills"
-      - "competencies"
-      - "technologies"
-      - "tools & ci/cd"
-      - "languages"
-      - "frameworks"
-    education:
-      - "education"
-      - "academic"
-      - "university"
-      - "college"
-      - "school"
-    experience:
-      - "experience"
-      - "employment"
-      - "(software|java|python) developer"
-      - "technical mentor"
-      - "trainee"
-    projects:
-      - "technical projects"
-      - "projects"
-      - "portfolio"
-    certifications:
-      - "achievements & certifications"
-      - "certifications"
-      - "certificates"
-  confidence_threshold: 0.6
-  min_heading_size: 11
+    sections:
+      contact:
+        patterns:
+          - "^[A-Z][a-z]+\\s+[A-Z][a-z]+\\s+Developer"  # Match "Graduate Java Developer"
+          - "^[A-Z\\s]+$"  # All caps name
+          - "^[A-Z][a-z]+\\s+[A-Z][a-z]+$"  # Title case name
+          - "contact\\s*information"
+          - "personal\\s*details"
+          - "^\\d{3}[-\\s]?\\d{3}[-\\s]?\\d{4}"  # Phone number pattern
+          - "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"  # Email pattern
+          - "^linkedin\\.com/in/[\\w-]+$"  # LinkedIn pattern
+          - "^github\\.com/[\\w-]+$"  # GitHub pattern
+        required: true
+      summary:
+        patterns:
+          - "^summary$"
+          - "professional\\s+summary"
+          - "profile"
+          - "objective"
+          - "about\\s+me"
+          - "career\\s+objective"
+          - "^[A-Z][a-z]+\\s+[A-Z][a-z]+\\s+Developer"  # Match job title as summary
+        required: false
+      skills:
+        patterns:
+          - "^skills$"
+          - "^technical\\s+skills$"
+          - "^languages:"
+          - "^frameworks\\s+&\\s+libraries:"
+          - "^tools\\s+&\\s+ci/cd:"
+          - "^testing:"
+          - "^software\\s+design\\s+&\\s+architecture:"
+          - "^agile\\s+methodologies:"
+          - "technical\\s+skills"
+          - "skills(\\s+&\\s+competencies)?"
+          - "technologies(\\s+used)?"
+          - "tools\\s+&\\s+technologies"
+          - "core\\s+competencies"
+          - "expertise"
+          - "^programming\\s+languages$"
+          - "^frameworks$"
+          - "^tools$"
+          - "^databases$"
+          - "^methodologies$"
+        required: true
+      education:
+        patterns:
+          - "^education$"
+          - "education(\\s+background)?"
+          - "academic(\\s+background)?"
+          - "qualifications"
+          - "academic\\s+history"
+          - "educational\\s+qualifications"
+          - "bachelor\\s+of\\s+science"
+          - "national\\s+certificate"
+          - "^wethinkcode"  # Match WeThinkCode
+          - "^university\\s+of"
+          - "^college"
+          - "^institute"
+        required: true
+      experience:
+        patterns:
+          - "^experience$"
+          - "^work\\s+experience$"
+          - "^professional\\s+experience$"
+          - "^employment\\s+history$"
+          - "^career\\s+history$"
+          - "^work\\s+history$"
+          - "^[A-Z][a-z]+\\s+[A-Z]?[a-z]*\\s*Developer"  # Match "Graduate Java Developer", "Software Developer", etc.
+          - "^[A-Z][a-z]+\\s+Developer\\s+\\([A-Za-z]+\\)"  # Match "Developer (Freelance)"
+          - "^[A-Z][a-z]+\\s+Training\\s+Developer"  # Match "AI Training Developer"
+          - "^Technical\\s+Mentor"  # Match "Technical Mentor"
+          - "^Trainee\\s+Software\\s+Developer"  # Match "Trainee Software Developer"
+          - "^[A-Z][a-z]+\\s+Engineer"  # Match any Engineer title
+          - "^[A-Z][a-z]+\\s+Consultant"  # Match any Consultant title
+          - "^[A-Z][a-z]+\\s+Analyst"  # Match any Analyst title
+          - "^[A-Z][a-z]+\\s+Manager"  # Match any Manager title
+          - "^[A-Z][a-z]+\\s+Architect"  # Match any Architect title
+          - "^[A-Z][a-z]+\\s+Lead"  # Match any Lead title
+        required: true
+      projects:
+        patterns:
+          - "^projects$"
+          - "^technical\\s+projects$"
+          - "portfolio"
+          - "technical\\s+projects"
+          - "personal\\s+projects"
+          - "key\\s+projects"
+          - "^[\\w\\s-]+\\s+-\\s+[\\w\\s]+\\s+app$"  # Match project titles like "FitQuest - A running fitness App"
+          - "^[\\w\\s-]+\\s+-\\s+[\\w\\s]+\\s+game$"  # Match project titles like "Brownfields - Robot Worlds Game"
+          - "^project\\s+\\d+:"  # Match "Project 1:", "Project 2:", etc.
+          - "^\\d+\\.\\s+[\\w\\s-]+"  # Match "1. Project Name", "2. Project Name", etc.
+        required: false
+      certifications:
+        patterns:
+          - "^achievements\\s+&\\s+certifications$"
+          - "certifications?"
+          - "certificates?"
+          - "achievements"
+          - "awards"
+          - "honors"
+          - "accomplishments"
+          - "^hackerrank\\s+certifications?:"  # Match HackerRank certifications
+          - "^medallion"  # Match Medallion achievements
+        required: false
+  settings:
+    confidence_threshold: 0.4  # Lowered from 0.5 for better recall
+    min_heading_size: 10
+    fuzzy_match: true

@@ -18,10 +18,10 @@ class EntityExtractor:
     def __init__(self, config: Dict):
         self.nlp = spacy.load(config.get('base_model', 'en_core_web_lg'))
         self.pii_anonymizer = PIIAnonymizer(config.get('pii_config', {}))
-        self.skill_normalizer = SkillNormalizer(config.get('skill_ontology_path'))
+        self.skill_normalizer = SkillNormalizer(config.get('skill_ontology_path', 'data/ontology/skills_ontology.json'))
         self.date_normalizer = DateNormalizer()
-        self.edu_normalizer = EducationNormalizer(config.get('education_data_dir'))
-        self.exp_normalizer = ExperienceNormalizer(config.get('experience_data_dir'))
+        self.edu_normalizer = EducationNormalizer(config.get('education_data_dir', 'data/education'))
+        self.exp_normalizer = ExperienceNormalizer(config.get('experience_data_dir', 'data/experience'))
         self.min_confidence = config.get('min_confidence', 0.7)
         
         # Add custom pipeline components - FIXED VERSION
@@ -39,11 +39,60 @@ class EntityExtractor:
             ruler = self.nlp.get_pipe("entity_ruler")
         
         patterns = [
-            {"label": "SKILL", "pattern": [{"LOWER": "machine"}, {"LOWER": "learning"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "deep"}, {"LOWER": "learning"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "natural"}, {"LOWER": "language"}, {"LOWER": "processing"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "data"}, {"LOWER": "analysis"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "cloud"}, {"LOWER": "computing"}]},
+            # Programming Languages
+            {"label": "SKILL", "pattern": [{"LOWER": "java"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "python"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "javascript"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "typescript"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "dart"}]},
+            
+            # Frameworks & Libraries
+            {"label": "SKILL", "pattern": [{"LOWER": "spring"}, {"LOWER": "boot"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "angular"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "flutter"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "apache"}, {"LOWER": "kafka"}]},
+            
+            # Tools & CI/CD
+            {"label": "SKILL", "pattern": [{"LOWER": "git"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "linux"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "docker"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "maven"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "gitlab"}, {"LOWER": "ci"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "github"}, {"LOWER": "actions"}]},
+            
+            # Testing
+            {"label": "SKILL", "pattern": [{"LOWER": "junit"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "unittest"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "test"}, {"LOWER": "driven"}, {"LOWER": "development"}]},
+            
+            # Architecture & Design
+            {"label": "SKILL", "pattern": [{"LOWER": "mvc"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "concurrent"}, {"LOWER": "systems"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "microservices"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "api"}, {"LOWER": "development"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "mobile"}, {"LOWER": "development"}]},
+            
+            # Agile & Process
+            {"label": "SKILL", "pattern": [{"LOWER": "scrum"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "kanban"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "sprint"}, {"LOWER": "planning"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "retrospectives"}]},
+            
+            # Java-specific
+            {"label": "SKILL", "pattern": [{"LOWER": "multithreading"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "concurrency"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "stream"}, {"LOWER": "api"}]},
+            
+            # Databases
+            {"label": "SKILL", "pattern": [{"LOWER": "sql"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "sqlite"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "postgresql"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "firebase"}]},
+            
+            # Cloud & Infrastructure
+            {"label": "SKILL", "pattern": [{"LOWER": "ci"}, {"LOWER": "cd"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "rest"}, {"LOWER": "api"}]},
+            {"label": "SKILL", "pattern": [{"LOWER": "jwt"}]},
         ]
         ruler.add_patterns(patterns)
         
@@ -119,248 +168,242 @@ class EntityExtractor:
             return cleaned[:last_period + 1] if last_period > 0 else cleaned[:497] + '...'
         return cleaned
     
-    def _extract_skills(self, doc: Doc) -> List[str]:
-        """Extracts skills using multiple techniques"""
-        skills = set()
-        
-        # 1. Extract using NER
-        for ent in doc.ents:
-            if ent.label_ == "SKILL":
-                skills.add(ent.text.strip())
-        
-        # 2. Extract noun chunks that match skill patterns
-        for chunk in doc.noun_chunks:
-            if self._is_skill(chunk):
-                skills.add(chunk.text.strip())
-        
-        # 3. Extract from known skill patterns
-        for token in doc:
-            if token.text.lower() in ['java', 'python', 'c++', 'javascript', 'sql']:
-                skills.add(token.text)
-        
-        # 4. Normalize and deduplicate
-        return self.skill_normalizer.normalize_list(list(skills))
-    
-    def _is_skill(self, chunk: Span) -> bool:
-        """Determines if a text span represents a skill"""
-        # Heuristic: Skills are typically 1-3 words, not containing stop words
-        if len(chunk) > 3 or len(chunk) < 1:
-            return False
-        if any(token.is_stop for token in chunk):
-            return False
-        if any(token.is_punct for token in chunk):
-            return False
-        return True
-    
-    def _extract_education(self, education_text: str) -> List[Education]:
-        """Extracts education information using pattern matching and NLP"""
-        if not education_text.strip():
+    def _extract_skills(self, text_or_doc) -> List[str]:
+        """Extracts skills from text using pattern matching and NLP"""
+        # Convert input to text if it's a Doc
+        if isinstance(text_or_doc, Doc):
+            text = text_or_doc.text
+        else:
+            text = str(text_or_doc)
+
+        if not text.strip():
             return []
             
-        education_entries = []
-        entries = self._split_education_entries(education_text)
-        
-        for entry in entries:
-            if not entry.strip():
-                continue
-                
-            # Extract components using improved parsing
-            institution, degree, dates, gpa = self._parse_education_entry(entry)
-            field_of_study = self._extract_field_of_study(entry)
-            
-            # Normalize extracted values
-            institution = self.edu_normalizer.normalize_institution(institution) if institution else None
-            degree = self.edu_normalizer.normalize_degree(degree) if degree else None
-            field_of_study = self.edu_normalizer.normalize_field(field_of_study) if field_of_study else None
-            gpa_value = self.edu_normalizer.normalize_gpa(str(gpa)) if gpa is not None else None
-            
-            # Parse and normalize dates
-            start_date, end_date = None, None
-            if dates:
-                date_parts = re.split(r'\s*[–\-]\s*', dates, 1)
-                start_date = self.date_normalizer.normalize(date_parts[0].strip())
-                end_date = self.date_normalizer.normalize(date_parts[1].strip()) if len(date_parts) > 1 else None
-            
-            # Create education object only if we have valid data
-            if institution or degree:
-                education_entries.append(Education(
-                    institution=institution,
-                    degree=degree,
-                    field_of_study=field_of_study,
-                    start_date=start_date,
-                    end_date=end_date,
-                    gpa=gpa_value
-                ))
-        
-        return education_entries
-    
-    # In _split_education_entries
-    def _split_education_entries(self, text: str) -> List[str]:
-        # Group lines by institution
-        entries = []
-        current_entry = []
-        lines = text.strip().split('\n')
+        skills = set()  # Use set to avoid duplicates
+        lines = text.split('\n')
+        current_category = None
         
         for line in lines:
             line = line.strip()
             if not line:
                 continue
                 
-            # Check for new institution pattern
-            if re.match(r'^[A-Z][a-zA-Z\s&]+$', line) and current_entry:
-                entries.append('\n'.join(current_entry))
-                current_entry = [line]
-            else:
-                current_entry.append(line)
+            # Check if line is a category header
+            if line.endswith(':'):
+                current_category = line.rstrip(':')
+                continue
+                
+            # Split line by common delimiters and clean up
+            items = [item.strip() for item in re.split(r'[,&/|]', line)]
+            for item in items:
+                # Skip if too short or just punctuation/spaces
+                if not item or len(item) <= 1 or not re.search(r'[a-zA-Z0-9]', item):
+                    continue
+                
+                # Clean up the skill
+                skill = re.sub(r'\s+', ' ', item).strip()
+                # Remove common prefixes/suffixes
+                skill = re.sub(r'^[-•*]\s*', '', skill)
+                skill = re.sub(r'\s*[-•*]$', '', skill)
+                
+                if current_category:
+                    skill = f"{current_category}: {skill}"
+                skills.add(skill)
         
+        # Also extract skills using NLP patterns
+        if isinstance(text_or_doc, Doc):
+            doc = text_or_doc
+        else:
+            doc = self.nlp(text)
+        
+        for ent in doc.ents:
+            if ent.label_ == "SKILL" and len(ent.text) > 1:
+                skills.add(ent.text)
+            
+        # Normalize and filter skills
+        normalized_skills = []
+        for skill in skills:
+            # Skip if too short or just numbers
+            if len(skill) <= 1 or skill.isdigit():
+                continue
+            # Normalize through skill normalizer
+            norm_skill = self.skill_normalizer.normalize(skill)
+            if norm_skill:
+                normalized_skills.append(norm_skill)
+            
+        return sorted(list(set(normalized_skills)))
+    
+    def _is_skill(self, chunk: Span) -> bool:
+        """Determines if a text span represents a skill"""
+        # Skip very short or very long chunks
+        if len(chunk.text) < 2 or len(chunk.text) > 30:
+            return False
+            
+        # Skip if contains unwanted characters
+        if re.search(r'[^\w\s\-/+#]', chunk.text):
+            return False
+            
+        # Skip common non-skill phrases
+        non_skills = {'year', 'month', 'day', 'present', 'current', 'company', 'team', 'project'}
+        if chunk.text.lower() in non_skills:
+            return False
+            
+        # Must contain at least one word character
+        if not re.search(r'\w', chunk.text):
+            return False
+            
+        return True
+    
+    def _extract_education(self, education_text: str) -> List[Education]:
+        """Extracts education information from text"""
+        if not education_text.strip():
+            return []
+            
+        entries = []
+        current_entry = {}
+        lines = education_text.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                if current_entry:
+                    # Try to create Education object
+                    try:
+                        entries.append(Education(
+                            institution=self.edu_normalizer.normalize_institution(current_entry.get('institution', '')),
+                            degree=self.edu_normalizer.normalize_degree(current_entry.get('degree', '')),
+                            field_of_study=self.edu_normalizer.normalize_field(current_entry.get('field', '')),
+                            start_date=self.date_normalizer.normalize(current_entry.get('start_date', '')),
+                            end_date=self.date_normalizer.normalize(current_entry.get('end_date', '')),
+                            description=current_entry.get('description', ''),
+                            achievements=current_entry.get('achievements', [])
+                        ))
+                    except Exception as e:
+                        logging.error(f"Failed to create Education entry: {e}")
+                current_entry = {}
+                continue
+            
+            # Extract dates
+            date_match = re.search(r'(\w+\s+\d{4})\s*-\s*(\w+\s+\d{4}|\bpresent\b)', line, re.IGNORECASE)
+            if date_match:
+                current_entry['start_date'] = date_match.group(1)
+                current_entry['end_date'] = date_match.group(2)
+                continue
+            
+            # Extract degree and field
+            degree_match = re.search(r'(Bachelor|Master|PhD|B\.?S\.?|M\.?S\.?|M\.?B\.?A\.?|Ph\.?D\.?)[^\n]*', line, re.IGNORECASE)
+            if degree_match:
+                degree_text = degree_match.group(0)
+                current_entry['degree'] = degree_text
+                # Try to extract field of study
+                field_match = re.search(r'(?:in|of)\s+([^,\n]+)', degree_text, re.IGNORECASE)
+                if field_match:
+                    current_entry['field'] = field_match.group(1)
+                continue
+            
+            # Extract institution
+            if not current_entry.get('institution'):
+                current_entry['institution'] = line
+            else:
+                # Append to description or achievements
+                if line.startswith(('-', '•')):
+                    if 'achievements' not in current_entry:
+                        current_entry['achievements'] = []
+                    current_entry['achievements'].append(line.lstrip('- •'))
+                else:
+                    if 'description' not in current_entry:
+                        current_entry['description'] = line
+                    else:
+                        current_entry['description'] += ' ' + line
+        
+        # Handle last entry
         if current_entry:
-            entries.append('\n'.join(current_entry))
+            try:
+                entries.append(Education(
+                    institution=self.edu_normalizer.normalize_institution(current_entry.get('institution', '')),
+                    degree=self.edu_normalizer.normalize_degree(current_entry.get('degree', '')),
+                    field_of_study=self.edu_normalizer.normalize_field(current_entry.get('field', '')),
+                    start_date=self.date_normalizer.normalize(current_entry.get('start_date', '')),
+                    end_date=self.date_normalizer.normalize(current_entry.get('end_date', '')),
+                    description=current_entry.get('description', ''),
+                    achievements=current_entry.get('achievements', [])
+                ))
+            except Exception as e:
+                logging.error(f"Failed to create last Education entry: {e}")
         
         return entries
-
-    
-    def _parse_education_entry(self, text: str) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[float]]:
-        """Parses an individual education entry"""
-        # Degree pattern: MBA, BSc, Ph.D., etc.
-        degree_pattern = r'\b(?:B\.?[A-Z]\.?|M\.?[A-Z]\.?|PhD|Ph\.?D\.?|MBA|MSc|MS|BS|BA)\b'
-        
-        # Date pattern: 2010-2014, 2015 - 2019, 2020-Present
-        date_pattern = r'(\d{4}\s*[–\-]\s*\d{4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}\s*[–\-]\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}|\d{4}\s*[–\-]\s*(?:Present|Current))'
-        
-        # GPA pattern: GPA: 3.8/4.0, 3.9/4
-        gpa_pattern = r'\bGPA\s*[:]?\s*(\d\.\d{1,2})\b'
-        
-        # Extract components
-        degree_match = re.search(degree_pattern, text, re.IGNORECASE)
-        date_match = re.search(date_pattern, text)
-        gpa_match = re.search(gpa_pattern, text)
-        gpa = float(gpa_match.group(1)) if gpa_match else None
-        
-        # Find institution - typically before degree or dates
-        institution_text = text
-        if degree_match:
-            institution_text = institution_text[:degree_match.start()]
-        if date_match:
-            institution_text = institution_text[:date_match.start()]
-        
-        # Clean institution name
-        institution = institution_text.strip()
-        institution = re.sub(r'[,;]$', '', institution)
-        
-        return (
-            institution if institution else None,
-            degree_match.group(0) if degree_match else None,
-            date_match.group(0) if date_match else None,
-            gpa
-        )
-    
-    def _extract_field_of_study(self, text: str) -> Optional[str]:
-        """Extracts field of study from education entry"""
-        patterns = [
-            r'in\s(.+?)(?:[,;]|$)',
-            r'Major\s*[:]?\s*(.+)',
-            r'Field\s*[:]?\s*(.+)',
-            r'Concentration\s*[:]?\s*(.+)'
-        ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                return match.group(1).strip()
-        return None
     
     def _extract_experience(self, experience_text: str) -> List[Experience]:
-        """Extracts work experience using advanced pattern matching"""
+        """Extracts work experience information from text"""
         if not experience_text.strip():
             return []
             
-        experiences = []
-        entries = self._split_experience_entries(experience_text)
+        entries = []
+        current_entry = {}
+        lines = experience_text.split('\n')
         
-        for entry in entries:
-            if not entry.strip():
+        for line in lines:
+            line = line.strip()
+            if not line:
+                if current_entry:
+                    # Try to create Experience object
+                    try:
+                        entries.append(Experience(
+                            company=current_entry.get('company', 'Unknown'),
+                            position=current_entry.get('position', 'Unknown'),
+                            start_date=self.date_normalizer.normalize(current_entry.get('start_date', '')),
+                            end_date=self.date_normalizer.normalize(current_entry.get('end_date', '')),
+                            description=current_entry.get('description', ''),
+                            technologies=current_entry.get('technologies', [])
+                        ))
+                    except Exception as e:
+                        logging.error(f"Failed to create Experience entry: {e}")
+                current_entry = {}
                 continue
-                
-            # Extract components
-            company, position, dates, description = self._parse_experience_entry(entry)
             
-            # Extract skills from description
-            technologies = []
-            if description:
-                doc = self.nlp(description)
-                technologies = [ent.text for ent in doc.ents if ent.label_ == "SKILL"]
+            # Extract dates
+            date_match = re.search(r'(\w+\s+\d{4})\s*-\s*(\w+\s+\d{4}|\bpresent\b)', line, re.IGNORECASE)
+            if date_match:
+                current_entry['start_date'] = date_match.group(1)
+                current_entry['end_date'] = date_match.group(2)
+                continue
             
-            # Normalize extracted values
-            company = self.exp_normalizer.normalize_company(company) if company else None
-            position = self.exp_normalizer.normalize_title(position) if position else None
-            technologies = self.exp_normalizer.normalize_technologies(technologies)
-            description = self.exp_normalizer.normalize_description(description) if description else None
-            
-            # Parse and normalize dates
-            start_date, end_date = None, None
-            if dates:
-                date_parts = re.split(r'\s*[–\-]\s*', dates, 1)
-                start_date = self.date_normalizer.normalize(date_parts[0].strip())
-                end_date = self.date_normalizer.normalize(date_parts[1].strip()) if len(date_parts) > 1 else None
-            
-            # Create experience object only if we have valid data
-            if company or position:
-                experiences.append(Experience(
-                    company=company,
-                    position=position,
-                    start_date=start_date,
-                    end_date=end_date,
-                    description=description,
-                    technologies=technologies
-                ))
-        
-            return experiences 
-          
-    def _split_experience_entries(self, text: str) -> List[str]:
-        """Splits experience text into individual entries using blank lines as separators"""
-        # Split by blank lines (two or more newlines with optional whitespace)
-        entries = re.split(r'\n\s*\n', text.strip())
-        return [entry.strip() for entry in entries if entry.strip()]
-        
-    def _parse_experience_entry(self, text: str) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
-        date_pattern = (
-            r'(\d{4}\s*[–\-]\s*\d{4}|'
-            r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}\s*[–\-]\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}|'
-            r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}\s*[–\-]\s*(?:Present|Current)|'
-            r'\d{4}\s*[–\-]\s*(?:Present|Current))'
-        )
-        # Split into header and description
-        parts = text.split('\n', 1)
-        header = parts[0].strip()
-        description = parts[1].strip() if len(parts) > 1 else None
-        
-        # Extract dates
-        date_match = re.search(date_pattern, text)  # Search entire text
-        dates = date_match.group(0) if date_match else None
-        
-        # Remove dates from header
-        header_clean = re.sub(date_pattern, '', header).strip() if date_match else header
-        
-        # Split company and position
-        company, position = None, None
-        if ',' in header_clean:
-            parts = header_clean.rsplit(',', 1)
-            company = parts[0].strip()
-            position = parts[1].strip()
-        elif ' at ' in header_clean.lower():
-            parts = header_clean.lower().split(' at ', 1)
-            position = parts[0].strip()
-            company = parts[1].strip()
-        else:
-            # Fallback: first part is company, rest is position
-            match = re.match(r'^([\w\s&]+)\s+(.+)$', header_clean)
-            if match:
-                company = match.group(1).strip()
-                position = match.group(2).strip()
+            # Extract position and company
+            if not current_entry.get('position'):
+                # First non-empty line is usually the position
+                current_entry['position'] = line
+            elif not current_entry.get('company'):
+                # Second non-empty line is usually the company
+                current_entry['company'] = line
             else:
-                position = header_clean
+                # Extract technologies from description
+                tech_matches = re.findall(r'\b[A-Z][A-Za-z0-9.#+]+(?:\s+[A-Z][A-Za-z0-9.#+]+)*\b', line)
+                if tech_matches:
+                    if 'technologies' not in current_entry:
+                        current_entry['technologies'] = []
+                    current_entry['technologies'].extend(tech_matches)
+                
+                # Add to description
+                if 'description' not in current_entry:
+                    current_entry['description'] = line
+                else:
+                    current_entry['description'] += ' ' + line
         
-        return company, position, dates, description
+        # Handle last entry
+        if current_entry:
+            try:
+                entries.append(Experience(
+                    company=current_entry.get('company', 'Unknown'),
+                    position=current_entry.get('position', 'Unknown'),
+                    start_date=self.date_normalizer.normalize(current_entry.get('start_date', '')),
+                    end_date=self.date_normalizer.normalize(current_entry.get('end_date', '')),
+                    description=current_entry.get('description', ''),
+                    technologies=current_entry.get('technologies', [])
+                ))
+            except Exception as e:
+                logging.error(f"Failed to create last Experience entry: {e}")
+        
+        return entries
     
     def _extract_projects(self, projects_text: str) -> List[Project]:
         """Extracts projects with names and descriptions"""

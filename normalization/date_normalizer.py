@@ -1,8 +1,9 @@
 # normalization/date_normalizer.py
 
+from datetime import datetime, date
 import dateparser
 import re
-from datetime import datetime
+from typing import Optional
 
 class DateNormalizer:
     def __init__(self):
@@ -21,24 +22,35 @@ class DateNormalizer:
             'dec': '12', 'december': '12'
         }
     
-    def normalize(self, date_str: str) -> str:
+    def normalize(self, date_str: str) -> Optional[date]:
+        """Normalize date string to date object"""
         if not date_str:
             return None
+            
+        # Handle 'Present' or 'Current'
+        if re.search(r'\b(present|current)\b', date_str, re.IGNORECASE):
+            return date.today()
             
         parsed = dateparser.parse(date_str)
         if parsed:
             try:
-                datetime(parsed.year, parsed.month, parsed.day)
-                return parsed.strftime('%Y-%m-%d')
+                return date(parsed.year, parsed.month, parsed.day)
             except ValueError:
                 pass
         
         return self._fallback_parse(date_str)
     
-    def _fallback_parse(self, date_str: str) -> str:
+    def _fallback_parse(self, date_str: str) -> Optional[date]:
+        """Fallback date parsing for special formats"""
+        # Handle quarters (Q1-Q4)
         quarter_match = re.search(r'\bQ([1-4])\s*(\d{4})\b', date_str, re.IGNORECASE)
         if quarter_match:
-            return None
+            quarter, year = quarter_match.groups()
+            month = (int(quarter) - 1) * 3 + 1  # Q1->1, Q2->4, Q3->7, Q4->10
+            try:
+                return date(int(year), month, 1)
+            except ValueError:
+                return None
             
         patterns = [
             r'(?P<month>[a-z]+)[^\d]*(?P<year>\d{4})',
@@ -73,17 +85,16 @@ class DateNormalizer:
                 continue
                 
             try:
-                datetime(int(year), int(month), 1)
-                return f"{year}-{month}-01"
+                return date(int(year), int(month), 1)
             except ValueError:
                 continue
                 
+        # Handle year-only dates
         all_numbers = re.findall(r'\d+', date_str)
         if len(all_numbers) == 1 and len(all_numbers[0]) == 4:
             year = all_numbers[0]
             try:
-                datetime(int(year), 1, 1)
-                return f"{year}-01-01"
+                return date(int(year), 1, 1)
             except ValueError:
                 pass
                 

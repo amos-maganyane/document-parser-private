@@ -1,0 +1,132 @@
+# Contact patterns
+contact_patterns:
+  name:
+    - "^[A-Z\\s]+$"  # All caps name
+    - "^[A-Z][a-z]+\\s+[A-Z][a-z]+$"  # Title case name
+  phone:
+    - "\\d{3}[-.]\\d{3}[-.]\\d{4}"
+    - "\\+?\\d{1,3}[-.]?\\d{3}[-.]\\d{3}[-.]\\d{4}"
+  email:
+    - "\\b[\\w\\.-]+@[\\w\\.-]+\\.[\\w]{2,4}\\b"
+  social:
+    linkedin: "linkedin\\.com/\\S+"
+    github: "github\\.com/\\S+"
+
+# Education patterns
+education_patterns:
+  institution_indicators:
+    - "university"
+    - "college"
+    - "institute"
+    - "school"
+  degree_indicators:
+    - "bachelor|master|phd|bsc|msc|mba|ba|bs|ms|ma"
+    - "b\\.?s\\.?|m\\.?s\\.?|ph\\.?d\\.?|m\\.?b\\.?a\\.?"
+  field_indicators:
+    - "major|concentration|field|study"
+  date_patterns:
+    - "(19|20)\\d{2}\\s*[-–]\\s*((19|20)\\d{2}|present)"
+  achievement_indicators:
+    - "award|achievement|medal|honor|prize|distinction"
+
+# Experience patterns
+experience_patterns:
+  position_indicators:
+    - "developer"
+    - "engineer"
+    - "manager"
+    - "consultant"
+    - "analyst"
+  company_suffixes:
+    - "Inc|Incorporated"
+    - "Corp|Corporation"
+    - "Co|Company"
+    - "Ltd|Limited"
+    - "LLC"
+    - "Group"
+  title_abbreviations:
+    # Compound patterns (must be listed first)
+    - ["Sr\\.?\\s*SWE", "Senior Software Engineer"]
+    - ["Sr\\.?\\s*Dev(?:eloper)?", "Senior Developer"]
+    - ["Sr\\.?\\s*Eng(?:ineer)?", "Senior Engineer"]
+    - ["Jr\\.?\\s*SWE", "Junior Software Engineer"]
+    - ["Jr\\.?\\s*Dev(?:eloper)?", "Junior Developer"]
+    - ["Jr\\.?\\s*Eng(?:ineer)?", "Junior Engineer"]
+    - ["Tech\\s*Lead", "Technical Lead"]
+    - ["Sr\\.?\\s*Tech\\s*Lead", "Senior Technical Lead"]
+    # Individual patterns
+    - ["Sr\\.?", "Senior"]
+    - ["Jr\\.?", "Junior"]
+    - ["Mgr\\.?", "Manager"]
+    - ["Dir\\.?", "Director"]
+    - ["VP", "Vice President"]
+    - ["PM", "Project Manager"]
+    - ["SWE", "Software Engineer"]
+    - ["SDE", "Software Development Engineer"]
+    - ["Dev\\.?", "Developer"]
+    - ["Eng\\.?", "Engineer"]
+    - ["Tech\\.?", "Technical"]
+    - ["Sys\\.?", "Systems"]
+    - ["Arch\\.?", "Architect"]
+    - ["Lead", "Lead"]  # Prevent recursive expansion
+
+# Project patterns
+project_patterns:
+  name_indicators:
+    - "[:|-]$"  # Ends with colon or dash
+  technology_indicators:
+    - "technologies\\s+used[:]?"
+    - "tech\\s+stack[:]?"
+    - "built\\s+with[:]?"
+
+# Certification patterns
+certification_patterns:
+  indicators:
+    - "certification"
+    - "certificate"
+    - "certified"
+    - "license"
+    - "credential"
+
+# Skill patterns
+skill_patterns:
+  category_labels:
+    - "Languages"
+    - "Tools"
+    - "Frameworks"
+    - "Libraries"
+  separators:
+    - ','
+    - '•'
+    - '|'
+    - '/'
+    - '&'
+  ignore_prefixes:
+    - '•'
+    - '-'
+    - '*'
+  ignore_suffixes:
+    - '•'
+    - '-'
+    - '*'
+  ignore_standalone:
+    - 'and'
+    - 'or'
+    - 'with'
+    - 'using'
+    - 'in'
+    - 'on'
+    - 'for'
+    - 'to'
+    - 'of'
+    - 'the'
+
+# Experience normalization settings
+experience_normalization:
+  fuzzy_match:
+    company_threshold: 85
+    title_threshold: 90
+  description_cleaning:
+    bullet_points: "^[\\s•\\-*]+"
+    whitespace: "\\s+"
+    artifacts: "[^\\w\\s&.,-]"

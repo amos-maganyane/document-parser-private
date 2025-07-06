@@ -1,7 +1,7 @@
 {
-  "University of Technology": ["Tech Univ", "Uni of Tech"],
-  "University of the People": ["UoPeople"],
-  "WeThinkCode": ["WethinkCode", "WeThinkCode_"],
-  "University of Cape Town": ["UCT"],
-  "Makhosini Combined Secondary School": ["Makhosini Secondary"]
+  "WeThinkCode": ["WeThinkCode_", "WethinkCode", "WeThink Code"],
+  "University of Technology": ["UT", "U Tech", "Uni of Tech"],
+  "Makhosini Combined Secondary School": ["Makhosini Secondary", "Makhosini School", "Makhosini Combined"],
+  "Enviro365 IT Solutions": ["Enviro365", "Enviro 365", "Enviro365 Solutions"],
+  "Scale AI": ["Scale", "Scale.ai", "Scale AI Inc"]
 }

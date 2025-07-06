@@ -1,2 +1,4 @@
 AM CV.pdf
 venv
+output.json
+sample_expected_output.json

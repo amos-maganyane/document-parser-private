@@ -6,6 +6,9 @@ from .layout_analyzer import LayoutAnalyzer
 from .section_detector import SectionDetector
 import logging
 import yaml  # Make sure to import yaml
+import json
+from pdfminer.high_level import extract_text
+from pdfminer.layout import LAParams
 
 class PDFParser:
     def __init__(self, config: Dict):
@@ -28,47 +31,147 @@ class PDFParser:
         
     def parse(self, file_path: str) -> Dict[str, Any]:
         self.logger.debug(f"Starting PDF parsing: {file_path}")
+        
         # First pass: Text extraction
         text_data = self._extract_text(file_path)
-        self.logger.debug(f"Extracted text data: {text_data}")
+        self.logger.debug(f"Raw text from PDF:\n{text_data.get('raw_text', '')}")
         
-        # Second pass: Layout analysis
-        if self.layout_analysis:
-            layout_data = self._analyze_layout(file_path)
-            self.logger.debug(f"Layout analysis: {layout_data}")
-            combined = self._integrate_layout(text_data, layout_data)
-            self.logger.debug(f"Combined data: {combined}")
+        # If we have no text, return empty result
+        if not text_data.get("raw_text", "").strip():
+            self.logger.error("No text could be extracted from PDF")
+            return {"raw_text": "", "sections": {}}
+            
+        try:
+            # Second pass: Layout analysis (optional)
+            if self.layout_analysis:
+                try:
+                    layout_data = self._analyze_layout(file_path)
+                    self.logger.debug(f"Layout analysis:\n{json.dumps(layout_data, indent=2)}")
+                    combined = self._integrate_layout(text_data, layout_data)
+                    self.logger.debug(f"Combined data:\n{json.dumps(combined, indent=2)}")
+                except Exception as e:
+                    self.logger.warning(f"Layout analysis failed: {e}, falling back to text-only parsing")
+                    # Create a simplified structure without layout info
+                    combined = {
+                        "content": [{
+                            "text": text_data["raw_text"],
+                            "type": "text",
+                            "position": {},
+                            "font": {"name": "Unknown", "size": 10}
+                        }],
+                        "raw_text": text_data["raw_text"],
+                        "metadata": text_data["metadata"]
+                    }
+            else:
+                # Skip layout analysis
+                combined = {
+                    "content": [{
+                        "text": text_data["raw_text"],
+                        "type": "text",
+                        "position": {},
+                        "font": {"name": "Unknown", "size": 10}
+                    }],
+                    "raw_text": text_data["raw_text"],
+                    "metadata": text_data["metadata"]
+                }
+            
+            # Detect sections using the combined or fallback data
             result = self.section_detector.detect_sections(combined)
-            self.logger.debug(f"Final sections: {result}")
+            self.logger.debug(f"Detected sections:\n{json.dumps(result.get('sections', {}), indent=2)}")
             return result
-
-        return text_data
+            
+        except Exception as e:
+            self.logger.error(f"Failed to parse PDF: {e}")
+            # Return at least the raw text if everything else fails
+            return {
+                "raw_text": text_data.get("raw_text", ""),
+                "sections": {},
+                "metadata": text_data.get("metadata", {})
+            }
     
     def _extract_text(self, file_path: str) -> Dict:
-        parsed = {"raw_text": "", "tables": [], "metadata": {}}
+        parsed = {"raw_text": "", "tables": [], "metadata": {}, "images": []}
         
         try:
+            # Try pdf2txt.py first
+            import subprocess
+            result = subprocess.run(['pdf2txt.py', file_path], capture_output=True, text=True)
+            if result.stdout.strip():
+                self.logger.debug(f"Text extracted with pdf2txt.py:\n{result.stdout}")
+                parsed["raw_text"] = result.stdout
+                
+                # Try to get metadata with pdfplumber
+                try:
+                    with pdfplumber.open(file_path) as pdf:
+                        parsed["metadata"] = pdf.metadata
+                except Exception as e:
+                    self.logger.warning(f"Failed to extract metadata: {e}")
+                
+                return parsed
+            
+            # If pdf2txt.py failed, try pdfplumber
+            self.logger.warning("pdf2txt.py extracted no text, trying pdfplumber")
             with pdfplumber.open(file_path) as pdf:
                 parsed["metadata"] = pdf.metadata
+                self.logger.debug(f"PDF metadata: {pdf.metadata}")
                 
                 for page in pdf.pages:
-                    # Extract text
-                    page_text = page.extract_text(x_tolerance=1, y_tolerance=1)
-                    parsed["raw_text"] += page_text + "\n\n"
+                    try:
+                        self.logger.debug(f"Processing page {page.page_number}")
+                        # Extract text with more lenient settings
+                        page_text = page.extract_text(x_tolerance=3, y_tolerance=3)
+                        if page_text:
+                            self.logger.debug(f"Page {page.page_number} text:\n{page_text}")
+                            parsed["raw_text"] += page_text + "\n\n"
+                        else:
+                            self.logger.warning(f"No text extracted from page {page.page_number}")
+                        
+                        # Try to extract tables
+                        try:
+                            tables = page.extract_tables()
+                            for table in tables:
+                                if table:  # Only add non-empty tables
+                                    parsed["tables"].append({
+                                        "page": page.page_number,
+                                        "data": table
+                                    })
+                                    self.logger.debug(f"Table found on page {page.page_number}: {table}")
+                        except Exception as table_err:
+                            self.logger.warning(f"Table extraction failed: {table_err}")
+                            
+                    except Exception as page_err:
+                        self.logger.warning(f"Page extraction failed: {page_err}")
+                        continue
+            
+            # If pdfplumber failed, try PyMuPDF
+            if not parsed["raw_text"].strip():
+                self.logger.warning("pdfplumber extracted no text, trying PyMuPDF")
+                doc = fitz.open(file_path)
+                
+                # Extract text from each page
+                for page_num in range(len(doc)):
+                    page = doc[page_num]
+                    self.logger.debug(f"Processing page {page_num + 1} with PyMuPDF")
                     
-                    # Extract tables
-                    tables = page.extract_tables()
-                    for table in tables:
-                        parsed["tables"].append({
-                            "page": page.page_number,
-                            "data": table
-                        })
-                    
-                    # Extract images metadata
-                    parsed["images"] = page.images
+                    try:
+                        # Extract text directly
+                        text_page = page.get_textpage()
+                        page_text = text_page.extractText()
+                        if page_text:
+                            self.logger.debug(f"Page {page_num + 1} text:\n{page_text}")
+                            parsed["raw_text"] += page_text + "\n\n"
+                        else:
+                            self.logger.warning(f"No text extracted from page {page_num + 1}")
+                    except Exception as e:
+                        self.logger.warning(f"Failed to extract text from page {page_num + 1}: {e}")
+            
+            # If we still got no text and OCR is enabled, try OCR
+            if not parsed["raw_text"].strip() and self.use_ocr:
+                self.logger.info("No text extracted with any method, falling back to OCR")
+                parsed = self._fallback_to_ocr(file_path)
                     
         except Exception as e:
-            logging.error(f"PDF extraction failed: {e}")
+            self.logger.error(f"PDF extraction failed: {e}")
             if self.use_ocr:
                 parsed = self._fallback_to_ocr(file_path)
         
@@ -85,14 +188,14 @@ class PDFParser:
             "metadata": text_data["metadata"]
         }
         
-        # Add content blocks with layout metadata
-        for block in layout_data.get("blocks", []):
+        # Add text blocks from layout analysis
+        for block in layout_data.get("text_blocks", []):
             if not block.get("text", "").strip():
                 continue
             
             # Get font info
-            font_size = block.get("font_summary", {}).get("dominant_size", 10)
-            font_name = block.get("font_summary", {}).get("dominant_font", "")
+            font_size = block.get("font", {}).get("size", 10)
+            font_name = block.get("font", {}).get("name", "")
             
             # Check if heading by font characteristics
             is_heading = (
@@ -104,7 +207,7 @@ class PDFParser:
             integrated["content"].append({
                 "text": block["text"],
                 "type": "heading" if is_heading else "text",
-                "position": block.get("bbox", []),
+                "position": block.get("position", {}),
                 "font": {
                     "size": font_size,
                     "name": font_name
@@ -133,9 +236,10 @@ class PDFParser:
             full_text = ""
             
             for page_num in range(len(doc)):
-                page = doc.load_page(page_num)
-                pix = page.get_pixmap()
-                img = Image.open(io.BytesIO(pix.tobytes()))
+                page = doc[page_num]
+                mat = fitz.Matrix(2, 2)  # Scale up for better OCR
+                pix = page.get_pixmap(matrix=mat)  # Use matrix parameter
+                img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 text = pytesseract.image_to_string(img)
                 full_text += text + "\n\n"
                 

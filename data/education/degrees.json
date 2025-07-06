@@ -1,24 +1,34 @@
 {
     "Bachelor of Science": [
         "BS",
-        "BSc",
         "B.S.",
-        "B.Sc."
+        "BSc",
+        "B.Sc.",
+        "Bachelor of Sciences",
+        "Bachelors of Science",
+        "B.S. Degree"
     ],
     "Bachelor of Arts": [
-        "B.A.",
         "BA",
-        "Bachelor of Arts"
+        "B.A.",
+        "Bachelor Arts",
+        "Bachelors of Arts",
+        "B.A. Degree"
     ],
     "Master of Science": [
-        "M.S.",
         "MS",
+        "M.S.",
         "MSc",
-        "M.Sc"
+        "M.Sc.",
+        "Masters of Science",
+        "Master Sciences",
+        "M.S. Degree"
     ],
     "Master of Business Administration": [
         "MBA",
-        "M.B.A."
+        "M.B.A.",
+        "Master in Business Administration",
+        "Masters in Business Administration"
     ],
     "Doctor of Philosophy": [
         "PhD",
@@ -31,6 +41,14 @@
     ],
     "National Senior Certificate": [
         "NSC",
-        "Matric"
+        "National Senior Cert",
+        "Matric",
+        "Senior Certificate",
+        "Grade 12"
+    ],
+    "Systems Development Certificate": [
+        "Systems Dev Cert",
+        "Systems Development",
+        "Software Development Certificate"
     ]
 }
