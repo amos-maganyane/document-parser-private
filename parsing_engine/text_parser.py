@@ -34,6 +34,7 @@ class TextParser:
                 "content": [],
                 "metadata": self._extract_metadata(file_path, error=True),
                 "tables": [],
+         
                 "images": []
             }
     

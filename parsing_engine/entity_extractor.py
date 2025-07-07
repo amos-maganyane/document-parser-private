@@ -1,6 +1,5 @@
 from typing import Dict, List, Optional, Tuple
-import spacy
-from spacy.tokens import Doc, Span
+from transformers import pipeline
 
 from normalization.experience_normalizer import ExperienceNormalizer
 from .pii_handler import PIIAnonymizer
@@ -14,427 +13,245 @@ import logging
 from datetime import date
 
 class EntityExtractor:
-# Update the __init__ method in EntityExtractor class
     def __init__(self, config: Dict):
-        self.nlp = spacy.load(config.get('base_model', 'en_core_web_lg'))
+        self.ner_pipeline = pipeline("ner", model="dslim/bert-base-NER", aggregation_strategy="simple")
         self.pii_anonymizer = PIIAnonymizer(config.get('pii_config', {}))
         self.skill_normalizer = SkillNormalizer(config.get('skill_ontology_path', 'data/ontology/skills_ontology.json'))
         self.date_normalizer = DateNormalizer()
         self.edu_normalizer = EducationNormalizer(config.get('education_data_dir', 'data/education'))
         self.exp_normalizer = ExperienceNormalizer(config.get('experience_data_dir', 'data/experience'))
         self.min_confidence = config.get('min_confidence', 0.7)
-        
-        # Add custom pipeline components - FIXED VERSION
-        if 'merge_entities' not in self.nlp.pipe_names:
-            self.nlp.add_pipe('merge_entities')
-        
-        # Configure NLP for resume parsing
-        self._configure_nlp()
-        
-    def _configure_nlp(self):
-        # Add patterns for skill detection
-        if 'entity_ruler' not in self.nlp.pipe_names:
-            ruler = self.nlp.add_pipe("entity_ruler", before="ner")
-        else:
-            ruler = self.nlp.get_pipe("entity_ruler")
-        
-        patterns = [
-            # Programming Languages
-            {"label": "SKILL", "pattern": [{"LOWER": "java"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "python"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "javascript"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "typescript"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "dart"}]},
-            
-            # Frameworks & Libraries
-            {"label": "SKILL", "pattern": [{"LOWER": "spring"}, {"LOWER": "boot"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "angular"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "flutter"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "apache"}, {"LOWER": "kafka"}]},
-            
-            # Tools & CI/CD
-            {"label": "SKILL", "pattern": [{"LOWER": "git"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "linux"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "docker"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "maven"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "gitlab"}, {"LOWER": "ci"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "github"}, {"LOWER": "actions"}]},
-            
-            # Testing
-            {"label": "SKILL", "pattern": [{"LOWER": "junit"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "unittest"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "test"}, {"LOWER": "driven"}, {"LOWER": "development"}]},
-            
-            # Architecture & Design
-            {"label": "SKILL", "pattern": [{"LOWER": "mvc"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "concurrent"}, {"LOWER": "systems"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "microservices"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "api"}, {"LOWER": "development"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "mobile"}, {"LOWER": "development"}]},
-            
-            # Agile & Process
-            {"label": "SKILL", "pattern": [{"LOWER": "scrum"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "kanban"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "sprint"}, {"LOWER": "planning"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "retrospectives"}]},
-            
-            # Java-specific
-            {"label": "SKILL", "pattern": [{"LOWER": "multithreading"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "concurrency"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "stream"}, {"LOWER": "api"}]},
-            
-            # Databases
-            {"label": "SKILL", "pattern": [{"LOWER": "sql"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "sqlite"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "postgresql"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "firebase"}]},
-            
-            # Cloud & Infrastructure
-            {"label": "SKILL", "pattern": [{"LOWER": "ci"}, {"LOWER": "cd"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "rest"}, {"LOWER": "api"}]},
-            {"label": "SKILL", "pattern": [{"LOWER": "jwt"}]},
-        ]
-        ruler.add_patterns(patterns)
-        
+
     def extract_resume(self, document: Dict) -> Resume:
         try:
-            # Extract and anonymize text
             sections = document.get('sections', {})
             raw_text = self._combine_sections(sections)
             anonymized_text, pii_map = self.pii_anonymizer.anonymize(raw_text)
-            
-            # Process with NLP
-            doc = self.nlp(anonymized_text)
-            
-            # Extract entities
+
             resume = Resume(
-                contact=self._extract_contact(document.get('sections', {}).get('contact', '')),
-                summary=self._extract_summary(document.get('sections', {}).get('summary', '')),
-                skills=self._extract_skills(doc),
-                education=self._extract_education(document.get('sections', {}).get('education', '')),
-                experience=self._extract_experience(document.get('sections', {}).get('experience', '')),
-                projects=self._extract_projects(document.get('sections', {}).get('projects', '')),
-                certifications=self._extract_certifications(document.get('sections', {}).get('education', ''))
+                contact=self._extract_contact(sections.get('contact', '')),
+                summary=self._extract_summary(sections.get('summary', '')),
+                skills=self._extract_skills(sections.get('skills', '')),
+                education=self._extract_education(sections.get('education', '')),
+                experience=self._extract_experience(sections.get('experience', '')),
+                projects=self._extract_projects(sections.get('projects', '')),
+                certifications=self._extract_certifications(sections.get('education', ''))
             )
-            
+
             return resume
         except Exception as e:
             logging.error(f"Entity extraction failed: {str(e)}")
-            # Return partial results if possible
             return Resume()
 
     def _combine_sections(self, sections: Dict) -> str:
         return "\n\n".join([content['content'] for content in sections.values()])
-    
+
     def _extract_contact(self, contact_text: str) -> Dict:
-        """Extracts contact information with advanced pattern matching"""
         contact_info = {}
         
-        # Email extraction
+        # Extract name (assuming it's the first line before any common contact patterns)
+        name_match = re.match(r'^([A-Z][a-zA-Z\s]+)\n', contact_text)
+        if name_match:
+            contact_info["name"] = name_match.group(1).strip()
+            contact_text = contact_text[name_match.end():].strip() # Remove name from text
+
         email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
         email_match = re.search(email_pattern, contact_text)
         if email_match:
             contact_info["email"] = email_match.group(0)
-        
-        # Phone extraction (international format support)
-        # In _extract_contact
+
         phone_pattern = r'(\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b|\+\d{1,3}[-.\s]?\d{3,}[-.\s]?\d{4,})\b'
         phone_matches = re.findall(phone_pattern, contact_text)
         if phone_matches:
             contact_info["phone"] = phone_matches[0] if isinstance(phone_matches[0], str) else ''.join(phone_matches[0])
-        
-        # LinkedIn profile extraction
-        linkedin_pattern = r'(https?://)?(www\.)?linkedin\.com/(in|pub)/[a-zA-Z0-9-]+'
+
+        linkedin_pattern = r'(https?://)?(www\.)?linkedin\.com/(in|pub)/[a-zA-Z0-9-]+\b'
         linkedin_match = re.search(linkedin_pattern, contact_text)
         if linkedin_match:
             contact_info["linkedin"] = linkedin_match.group(0)
-        
-        # Location extraction using NLP
+
+        github_pattern = r'(https?://)?(www\.)?github\.com/[a-zA-Z0-9-]+/?\b'
+        github_match = re.search(github_pattern, contact_text)
+        if github_match:
+            contact_info["github"] = github_match.group(0)
+
         if contact_text.strip():
-            doc = self.nlp(contact_text)
-            locations = [ent.text for ent in doc.ents if ent.label_ == "GPE"]
+            entities = self.ner_pipeline(contact_text)
+            locations = [entity['word'] for entity in entities if entity['entity_group'] == 'LOC']
             if locations:
                 contact_info["location"] = locations[0]
-        
+
         return contact_info
-    
+
     def _extract_summary(self, summary_text: str) -> str:
-        """Cleans and extracts the professional summary"""
-        # Remove excessive whitespace and line breaks
         cleaned = re.sub(r'\s+', ' ', summary_text).strip()
-        # Truncate to 500 characters but preserve sentence boundaries
         if len(cleaned) > 500:
             last_period = cleaned[:500].rfind('.')
             return cleaned[:last_period + 1] if last_period > 0 else cleaned[:497] + '...'
         return cleaned
-    
-    def _extract_skills(self, text_or_doc) -> List[str]:
-        """Extracts skills from text using pattern matching and NLP"""
-        # Convert input to text if it's a Doc
-        if isinstance(text_or_doc, Doc):
-            text = text_or_doc.text
-        else:
-            text = str(text_or_doc)
 
-        if not text.strip():
+    def _extract_skills(self, skills_text: str) -> List[str]:
+        if not skills_text.strip():
             return []
-            
-        skills = set()  # Use set to avoid duplicates
-        lines = text.split('\n')
-        current_category = None
-        
-        for line in lines:
-            line = line.strip()
-            if not line:
+
+        skills = set()
+        # Split by common delimiters and clean up
+        potential_skills = re.split(r'[\n,;•/]+', skills_text)
+        for skill_phrase in potential_skills:
+            skill_phrase = skill_phrase.strip()
+            if not skill_phrase:
                 continue
-                
-            # Check if line is a category header
-            if line.endswith(':'):
-                current_category = line.rstrip(':')
-                continue
-                
-            # Split line by common delimiters and clean up
-            items = [item.strip() for item in re.split(r'[,&/|]', line)]
-            for item in items:
-                # Skip if too short or just punctuation/spaces
-                if not item or len(item) <= 1 or not re.search(r'[a-zA-Z0-9]', item):
-                    continue
-                
-                # Clean up the skill
-                skill = re.sub(r'\s+', ' ', item).strip()
-                # Remove common prefixes/suffixes
-                skill = re.sub(r'^[-•*]\s*', '', skill)
-                skill = re.sub(r'\s*[-•*]$', '', skill)
-                
-                if current_category:
-                    skill = f"{current_category}: {skill}"
-                skills.add(skill)
-        
-        # Also extract skills using NLP patterns
-        if isinstance(text_or_doc, Doc):
-            doc = text_or_doc
-        else:
-            doc = self.nlp(text)
-        
-        for ent in doc.ents:
-            if ent.label_ == "SKILL" and len(ent.text) > 1:
-                skills.add(ent.text)
             
-        # Normalize and filter skills
+            # Use NER for broader entity recognition, but also consider direct matches
+            entities = self.ner_pipeline(skill_phrase)
+            found_ner_skill = False
+            for entity in entities:
+                # Common NER tags for skills might be MISC, ORG, or even others depending on model training
+                if entity['entity_group'] in ['MISC', 'ORG', 'LOC', 'PROD'] or "skill" in entity['word'].lower():
+                    skills.add(entity['word'])
+                    found_ner_skill = True
+            
+            # If NER didn't find anything, consider the whole phrase as a potential skill
+            if not found_ner_skill:
+                skills.add(skill_phrase)
+
         normalized_skills = []
         for skill in skills:
-            # Skip if too short or just numbers
             if len(skill) <= 1 or skill.isdigit():
                 continue
-            # Normalize through skill normalizer
             norm_skill = self.skill_normalizer.normalize(skill)
             if norm_skill:
                 normalized_skills.append(norm_skill)
-            
+
         return sorted(list(set(normalized_skills)))
-    
-    def _is_skill(self, chunk: Span) -> bool:
-        """Determines if a text span represents a skill"""
-        # Skip very short or very long chunks
-        if len(chunk.text) < 2 or len(chunk.text) > 30:
-            return False
-            
-        # Skip if contains unwanted characters
-        if re.search(r'[^\w\s\-/+#]', chunk.text):
-            return False
-            
-        # Skip common non-skill phrases
-        non_skills = {'year', 'month', 'day', 'present', 'current', 'company', 'team', 'project'}
-        if chunk.text.lower() in non_skills:
-            return False
-            
-        # Must contain at least one word character
-        if not re.search(r'\w', chunk.text):
-            return False
-            
-        return True
-    
+
     def _extract_education(self, education_text: str) -> List[Education]:
-        """Extracts education information from text"""
         if not education_text.strip():
             return []
-            
+
         entries = []
-        current_entry = {}
-        lines = education_text.split('\n')
-        
-        for line in lines:
-            line = line.strip()
-            if not line:
-                if current_entry:
-                    # Try to create Education object
-                    try:
-                        entries.append(Education(
-                            institution=self.edu_normalizer.normalize_institution(current_entry.get('institution', '')),
-                            degree=self.edu_normalizer.normalize_degree(current_entry.get('degree', '')),
-                            field_of_study=self.edu_normalizer.normalize_field(current_entry.get('field', '')),
-                            start_date=self.date_normalizer.normalize(current_entry.get('start_date', '')),
-                            end_date=self.date_normalizer.normalize(current_entry.get('end_date', '')),
-                            description=current_entry.get('description', ''),
-                            achievements=current_entry.get('achievements', [])
-                        ))
-                    except Exception as e:
-                        logging.error(f"Failed to create Education entry: {e}")
-                current_entry = {}
+        # Split education entries by common patterns like newlines followed by a capital letter
+        # or specific keywords indicating a new entry.
+        education_entries = re.split(r'\n(?=[A-Z][^a-z])', education_text)
+
+        for entry_text in education_entries:
+            entry_text = entry_text.strip()
+            if not entry_text:
                 continue
             
-            # Extract dates
-            date_match = re.search(r'(\w+\s+\d{4})\s*-\s*(\w+\s+\d{4}|\bpresent\b)', line, re.IGNORECASE)
-            if date_match:
-                current_entry['start_date'] = date_match.group(1)
-                current_entry['end_date'] = date_match.group(2)
-                continue
+            # Attempt to extract institution, degree, and field of study
+            institution = self._extract_institution(entry_text)
+            degree = self._extract_degree(entry_text)
+            field_of_study = self._extract_field_of_study(entry_text)
             
-            # Extract degree and field
-            degree_match = re.search(r'(Bachelor|Master|PhD|B\.?S\.?|M\.?S\.?|M\.?B\.?A\.?|Ph\.?D\.?)[^\n]*', line, re.IGNORECASE)
-            if degree_match:
-                degree_text = degree_match.group(0)
-                current_entry['degree'] = degree_text
-                # Try to extract field of study
-                field_match = re.search(r'(?:in|of)\s+([^,\n]+)', degree_text, re.IGNORECASE)
-                if field_match:
-                    current_entry['field'] = field_match.group(1)
-                continue
-            
-            # Extract institution
-            if not current_entry.get('institution'):
-                current_entry['institution'] = line
-            else:
-                # Append to description or achievements
-                if line.startswith(('-', '•')):
-                    if 'achievements' not in current_entry:
-                        current_entry['achievements'] = []
-                    current_entry['achievements'].append(line.lstrip('- •'))
-                else:
-                    if 'description' not in current_entry:
-                        current_entry['description'] = line
-                    else:
-                        current_entry['description'] += ' ' + line
-        
-        # Handle last entry
-        if current_entry:
-            try:
-                entries.append(Education(
-                    institution=self.edu_normalizer.normalize_institution(current_entry.get('institution', '')),
-                    degree=self.edu_normalizer.normalize_degree(current_entry.get('degree', '')),
-                    field_of_study=self.edu_normalizer.normalize_field(current_entry.get('field', '')),
-                    start_date=self.date_normalizer.normalize(current_entry.get('start_date', '')),
-                    end_date=self.date_normalizer.normalize(current_entry.get('end_date', '')),
-                    description=current_entry.get('description', ''),
-                    achievements=current_entry.get('achievements', [])
-                ))
-            except Exception as e:
-                logging.error(f"Failed to create last Education entry: {e}")
-        
+            start_date, end_date = self.date_normalizer.extract_period(entry_text)
+
+            entries.append(Education(
+                institution=self.edu_normalizer.normalize_institution(institution or ''),
+                degree=self.edu_normalizer.normalize_degree(degree or ''),
+                field_of_study=field_of_study,
+                start_date=start_date,
+                end_date=end_date,
+                description=entry_text
+            ))
         return entries
-    
+
     def _extract_experience(self, experience_text: str) -> List[Experience]:
-        """Extracts work experience information from text"""
         if not experience_text.strip():
             return []
-            
+
         entries = []
-        current_entry = {}
-        lines = experience_text.split('\n')
-        
-        for line in lines:
-            line = line.strip()
-            if not line:
-                if current_entry:
-                    # Try to create Experience object
-                    try:
-                        entries.append(Experience(
-                            company=current_entry.get('company', 'Unknown'),
-                            position=current_entry.get('position', 'Unknown'),
-                            start_date=self.date_normalizer.normalize(current_entry.get('start_date', '')),
-                            end_date=self.date_normalizer.normalize(current_entry.get('end_date', '')),
-                            description=current_entry.get('description', ''),
-                            technologies=current_entry.get('technologies', [])
-                        ))
-                    except Exception as e:
-                        logging.error(f"Failed to create Experience entry: {e}")
-                current_entry = {}
+        # Split experience entries by common patterns like newlines followed by a capital letter
+        # or specific keywords indicating a new entry, often combined with date patterns.
+        experience_entries = re.split(r'\n(?=[A-Z][^a-z])', experience_text)
+
+        for entry_text in experience_entries:
+            entry_text = entry_text.strip()
+            if not entry_text:
                 continue
-            
-            # Extract dates
-            date_match = re.search(r'(\w+\s+\d{4})\s*-\s*(\w+\s+\d{4}|\bpresent\b)', line, re.IGNORECASE)
-            if date_match:
-                current_entry['start_date'] = date_match.group(1)
-                current_entry['end_date'] = date_match.group(2)
-                continue
-            
-            # Extract position and company
-            if not current_entry.get('position'):
-                # First non-empty line is usually the position
-                current_entry['position'] = line
-            elif not current_entry.get('company'):
-                # Second non-empty line is usually the company
-                current_entry['company'] = line
-            else:
-                # Extract technologies from description
-                tech_matches = re.findall(r'\b[A-Z][A-Za-z0-9.#+]+(?:\s+[A-Z][A-Za-z0-9.#+]+)*\b', line)
-                if tech_matches:
-                    if 'technologies' not in current_entry:
-                        current_entry['technologies'] = []
-                    current_entry['technologies'].extend(tech_matches)
-                
-                # Add to description
-                if 'description' not in current_entry:
-                    current_entry['description'] = line
-                else:
-                    current_entry['description'] += ' ' + line
-        
-        # Handle last entry
-        if current_entry:
-            try:
-                entries.append(Experience(
-                    company=current_entry.get('company', 'Unknown'),
-                    position=current_entry.get('position', 'Unknown'),
-                    start_date=self.date_normalizer.normalize(current_entry.get('start_date', '')),
-                    end_date=self.date_normalizer.normalize(current_entry.get('end_date', '')),
-                    description=current_entry.get('description', ''),
-                    technologies=current_entry.get('technologies', [])
-                ))
-            except Exception as e:
-                logging.error(f"Failed to create last Experience entry: {e}")
-        
+
+            # Attempt to extract company and position
+            company = self._extract_company(entry_text)
+            position = self._extract_position(entry_text)
+
+            start_date, end_date = self.date_normalizer.extract_period(entry_text)
+
+            technologies = self._extract_skills(entry_text)
+
+            entries.append(Experience(
+                company=self.exp_normalizer.normalize_company(company or ''),
+                position=self.exp_normalizer.normalize_title(position or ''),
+                start_date=str(start_date) if start_date else None,
+                end_date=str(end_date) if end_date else None,
+                description=entry_text,
+                technologies=technologies
+            ))
         return entries
-    
+
+    def _extract_company(self, text: str) -> Optional[str]:
+        entities = self.ner_pipeline(text)
+        for entity in entities:
+            if entity['entity_group'] == 'ORG':
+                return entity['word']
+        # Fallback to regex if NER doesn't find an organization
+        # Look for common company indicators (e.g., Inc, LLC, Co, Group)
+        match = re.search(r'\b([A-Z][a-zA-Z0-9\s,.-]+(?:Inc|LLC|Co|Company|Group|Corp|Corporation|Ltd|Limited))\b', text)
+        if match:
+            return match.group(1)
+        return None
+
+    def _extract_position(self, text: str) -> Optional[str]:
+        entities = self.ner_pipeline(text)
+        for entity in entities:
+            if entity['entity_group'] == 'JOB_TITLE': # Assuming JOB_TITLE is a possible NER tag
+                return entity['word']
+            # Often positions are tagged as MISC or other general entities
+            if entity['entity_group'] == 'MISC' and ("developer" in entity['word'].lower() or "engineer" in entity['word'].lower()):
+                return entity['word']
+        # Fallback to regex for common job titles
+        match = re.search(r'\b(software engineer|developer|data scientist|project manager|analyst|consultant)\b', text, re.IGNORECASE)
+        if match:
+            return match.group(0)
+        return None
+
     def _extract_projects(self, projects_text: str) -> List[Project]:
-        """Extracts projects with names and descriptions"""
         if not projects_text.strip():
             return []
-            
+
         projects = []
         entries = self._split_project_entries(projects_text)
-        
+
         for entry in entries:
             if not entry.strip():
                 continue
-                
-            # Extract project components
+
             name, description, technologies = self._parse_project_entry(entry)
-            
+
             if name:
                 projects.append(Project(
                     name=name,
                     description=description,
                     technologies=technologies
                 ))
-        
         return projects
-    
+
     def _split_project_entries(self, text: str) -> List[str]:
         """Splits projects section into individual entries"""
-        # Split by project titles (typically bold or underlined)
-        entries = re.split(r'\n(?=\s*[•\-*]?\s*[A-Z][^\n:]+[:\n])', text)
+        # Enhanced project boundary detection
+        boundaries = [
+            r"\n(?=[A-Z][\w\s-]+ - [\w\s]+(?:app|system|platform|game))",  # Project Name - Description
+            r"\n(?=\d+\.\s+[A-Z][\w\s-]+)",  # Numbered list
+            r"\n(?=Project \d+:)",  # "Project X:"
+            r"\n(?=\s*[•\-*]?\s*[A-Z][^\n:]+[:\n])", # Bullet points or titles
+            r"\n\n(?=[A-Z])" # Split by double newline if the next line starts with a capital letter
+        ]
+        
+        # Create a combined regex for splitting
+        pattern = "|".join(boundaries)
+        entries = re.split(pattern, text)
+        
         return [entry.strip() for entry in entries if entry.strip()]
-    
+
     def _parse_project_entry(self, text: str) -> Tuple[Optional[str], Optional[str], List[str]]:
         """Parses an individual project entry"""
         # Split into name and description
@@ -443,29 +260,75 @@ class EntityExtractor:
         description = parts[1].strip() if len(parts) > 1 else None
         
         # Clean project name (remove bullets or numbering)
-        name = re.sub(r'^[\s•\-*]+', '', name)
-        name = re.sub(r':$', '', name)
+        name = re.sub(r'^[\s•\-*]+\s*', '', name)
+        name = re.sub(r':\s*', '', name)  # Remove trailing colon if it's a heading
         
         # Extract technologies from description
         technologies = []
         if description:
-            doc = self.nlp(description)
-            technologies = [ent.text for ent in doc.ents if ent.label_ == "SKILL"]
+            technologies = self._extract_skills(description)
         
         return name, description, technologies
-    
-    def _extract_certifications(self, education_text: str) -> List[str]:
-        patterns = [
-            r'AWS\s+Certified\s+[^\n,]+',
-            r'Google\s+[^\n,]+(?:Certification|Professional)',
-            r'Microsoft\s+Certified\s*:\s*[^\n,]+',
-            r'Certified\s+[^\n,]+Specialist',
-            r'\b(CISSP|PMP|CFA|CPA|CISM|CRISC)\b'
-        ]
-        
+
+    def _extract_certifications(self, certifications_text: str) -> List[str]:
+        if not certifications_text.strip():
+            return []
+
         certifications = []
-        for pattern in patterns:
-            matches = re.findall(pattern, education_text, re.IGNORECASE)
-            certifications.extend(matches)
+        # Split certifications by common patterns like newlines followed by a capital letter
+        # or specific keywords indicating a new entry.
+        certification_entries = re.split(r'\n(?=[A-Z][^a-z])', certifications_text)
+
+        for entry_text in certification_entries:
+            if not entry_text.strip():
+                continue
+            certifications.append(entry_text.strip())
+        return certifications
+
+    def _extract_institution(self, text: str) -> Optional[str]:
+        entities = self.ner_pipeline(text)
+        for entity in entities:
+            if entity['entity_group'] == 'ORG':
+                return entity['word']
+        # Fallback to regex if NER doesn't find an organization
+        match = re.search(r'(university|college|institute|school|academy)\b', text, re.IGNORECASE)
+        if match:
+            return match.group(0)
+        return None
+
+    def _extract_degree(self, text: str) -> Optional[str]:
+    # Attempt to extract degree using NER
+        entities = self.ner_pipeline(text)
+        for entity in entities:
+            if "degree" in entity['word'].lower() or "certificate" in entity['word'].lower():
+                return entity['word']
+
+        # Fallback to regex if NER fails
+        match = re.search(r'\b(bachelor|master|phd|bsc|msc|mba|ba|bs|ms|ma)\b\.?', text, re.IGNORECASE)
+        if match:
+            return match.group(0)
+
+        # Return None if no degree found
+        return None
+    
+    def _extract_field_of_study(self, text: str) -> Optional[str]:
+        # Look for common field of study keywords
+        fields = [
+            "computer science", "software engineering", "electrical engineering",
+            "mechanical engineering", "civil engineering", "data science",
+            "artificial intelligence", "machine learning", "information technology",
+            "business administration", "finance", "marketing", "physics",
+            "mathematics", "chemistry", "biology", "psychology", "history",
+            "literature", "arts", "design"
+        ]
+        for field in fields:
+            if re.search(r'\b' + re.escape(field) + r'\b', text, re.IGNORECASE):
+                return field
+        return None
         
-        return list(set(certifications))
+        # Extract technologies from description
+        technologies = []
+        if description:
+            technologies = self._extract_skills(description)
+        
+        return name, description, technologies

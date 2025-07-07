@@ -1,0 +1,145 @@
+{
+    "contact": {
+      "name": "Amos Maganyane",
+      "phone": "064-893-5067",
+      "email": "kmaganyane83@gmail.com",
+      "linkedin": "linkedin.com/in/amos-maganyane",
+      "github": "github.com/NitionVR"
+    },
+    "summary": null,
+    "skills": [
+      "Java",
+      "Multithreading",
+      "Concurrency",
+      "Stream API",
+      "Python",
+      "Dart",
+      "Javascript",
+      "Spring Boot",
+      "Angular",
+      "Flutter",
+      "Apache Kafka",
+      "Git",
+      "Linux",
+      "Docker",
+      "Maven",
+      "GitLab CI",
+      "Github Actions",
+      "JUnit",
+      "Unittest",
+      "Test Driven Development",
+      "MVC",
+      "Concurrent Systems",
+      "Microservices",
+      "API development",
+      "Mobile development",
+      "Scrum",
+      "Kanban",
+      "Sprint Planning",
+      "Retrospectives"
+    ],
+    "education": [
+      {
+        "institution": "University of the People",
+        "degree": "Bachelor of Science",
+        "field_of_study": "Computer Science",
+        "start_date": "2024-01-01",
+        "end_date": null,
+        "description": null,
+        "achievements": []
+      },
+      {
+        "institution": "WeThinkCode",
+        "degree": "National Certificate",
+        "field_of_study": "Information Technology (Systems Development)",
+        "start_date": "2023-09-01",
+        "end_date": "2024-12-01",
+        "description": null,
+        "achievements": []
+      },
+      {
+        "institution": "University of Cape Town",
+        "degree": "Bachelor of Science",
+        "field_of_study": "Astrophysics & Computer Science",
+        "start_date": null,
+        "end_date": null,
+        "description": "Completed up to second year coursework",
+        "achievements": [
+          "Class Medal: MAM2000W (2020)",
+          "Relevant courses: Data Structures, Algorithms, Computer Architecture, Linear Algebra"
+        ]
+      },
+      {
+        "institution": "Makhosini Combined Secondary School",
+        "degree": "National Senior Certificate",
+        "field_of_study": null,
+        "start_date": null,
+        "end_date": null,
+        "description": "Academic Average 90%",
+        "achievements": [
+          "Ranked 1st place in Physical Sciences NSC, Gauteng Province (2018)",
+          "Featured on eNCA as Top Achiever-Academic Excellence"
+        ]
+      }
+    ],
+    "experience": [
+      {
+        "company": "Enviro365 IT Solutions",
+        "position": "Graduate Java Developer",
+        "start_date": "2025-03-01",
+        "end_date": null,
+        "description": "Developing Java & Angular applications and contributing to all phases of the SDLC, from design to deployment. Collaborating with senior developers to implement scalable and efficient backend solutions. Participating in Agile sprints, code reviews, and automated testing to ensure software quality. Gaining experience with version control (Git), CI/CD pipelines, and modern Java frameworks.",
+        "technologies": ["Java", "Angular", "Git", "CI/CD"]
+      },
+      {
+        "company": "Scale AI",
+        "position": "AI Training Developer (Freelance)",
+        "start_date": "2024-10-01",
+        "end_date": null,
+        "description": "Contributed to LLM development through RLHF, specializing in Java multithreading and concurrency validation. Increased training data quality by 15% through expert validation of complex Java concepts and thread safety patterns, resulting in improved model performance on technical accuracy metrics. Streamlined code review process with cross-functional teams and resolved critical AI responses to concurrent programming issues, reducing training data errors by 10%.",
+        "technologies": ["Java", "Multithreading", "Concurrency", "LLM", "RLHF"]
+      },
+      {
+        "company": "WeThinkCode",
+        "position": "Technical Mentor",
+        "start_date": "2024-09-01",
+        "end_date": "2024-12-01",
+        "description": "Mentored a cohort of 10 first-year students in Python and core software engineering principles, facilitating weekly workshops and conducting detailed code reviews. Enhanced students' proficiency in clean coding, unit testing, debugging, and analytical problem-solving, resulting in a marked improvement in their project performance. Organized collaborative coding sessions to develop teamwork and communication skills, enabling students to approach complex projects more confidently.",
+        "technologies": ["Python", "Unit Testing", "Code Reviews"]
+      },
+      {
+        "company": "WeThinkCode",
+        "position": "Trainee Software Developer",
+        "start_date": "2023-09-01",
+        "end_date": "2024-12-01",
+        "description": "Built full-stack applications using Python & Java on the backend and Javascript on the frontend, integrating REST APIs and SQL databases. Led a team in refactoring a legacy multiplayer Java game, implementing multi-threading for real-time client-server interactions. Implemented unit tests (PyTest, JUnit), optimized queries, and utilized Git for version control in an Agile environment. Developed and debugged software on Linux, leveraging shell scripting for automation and deployment. Achieved Top 10 Performer recognition throughout the program.",
+        "technologies": ["Python", "Java", "Javascript", "REST APIs", "SQL", "PyTest", "JUnit", "Git", "Linux", "Shell Scripting"]
+      }
+    ],
+    "projects": [
+      {
+        "name": "Nition Search Engine",
+        "description": "Developed a high-performance Java search engine utilizing ExecutorService-based multithreading, processing 50,000+ pages concurrently with configurable thread pools and solid synchronization mechanisms, powered by Spring Boot and SQLite. Implemented search capabilities capable of handling 100K+ indexed documents with sub-second query processing, including boolean operators, phrase matching, and context-aware result highlighting using custom SuffixTrie structures. Built a modern, responsive interface with vanilla JavaScript and TailwindCSS, featuring real-time search suggestions with 300ms response time, keyboard navigation, and dynamic result pagination. Designed a thread-safe crawler architecture with atomic operations and concurrent data structures, achieving 30,000 pages per session through parallel processing while maintaining robots.txt compliance and graceful error handling.",
+        "technologies": ["Java", "ExecutorService", "Multithreading", "Spring Boot", "SQLite", "JavaScript", "TailwindCSS"]
+      },
+      {
+        "name": "FitQuest - A running fitness App",
+        "description": "Developed a full-featured Flutter fitness running application implementing MVVM with Clean Architecture, featuring real-time GPS tracking, route visualization, and comprehensive analytics dashboard with SQLite for offline data persistence and real time syncing with Firebase firestore. Built a high-precision location tracking system using Flutter Location services, implementing smart route smoothing algorithms and integrating OpenStreetMap with flutter map for real-time route visualization and replay functionality. Designed an extensible analytics engine utilizing Provider state management to process workout metrics, generating detailed performance insights, and visualizing progress through custom-built interactive charts and heatmaps. Implemented a sophisticated goal tracking system with custom training plans, featuring milestone-based progression, achievement notifications, and adaptive workout suggestions based on user performance data.",
+        "technologies": ["Flutter", "MVVM", "Clean Architecture", "GPS", "SQLite", "Firebase", "OpenStreetMap", "Provider"]
+      },
+      {
+        "name": "Employee Dashboard Application",
+        "description": "Developing a full-stack employee dashboard using Spring Boot (Java) and Angular, leveraging Spring Data JPA and PostgreSQL for scalable and reliable data persistence. Designed and implemented a RESTful API with JWT-based authentication and fine-grained, role-based access control (Admin/Non-Admin) for secure, tailored access. Creating features such as real-time time tracking, editable work logs, visual analytics, leave management, meeting coordination, GeoLocation-based sign-in, and calendar integration. Building a responsive, user-centric UI with adaptive navigation; planning Docker-based deployment for environment consistency; and managing codebase with Git.",
+        "technologies": ["Spring Boot", "Java", "Angular", "Spring Data JPA", "PostgreSQL", "JWT", "Docker", "Git"]
+      },
+      {
+        "name": "Brownfields - Robot Worlds Game",
+        "description": "Led a team to restore a legacy multiplayer client-server game in Java, designing and implementing a multi-threaded architecture for real-time gameplay and concurrent client interactions. Developed a high-performance server using Java's threading model, where each client connection runs on a dedicated thread, ensuring seamless command execution and world updates. Implemented background worker threads for continuous world-state synchronization, using Java TimerTasks and thread-safe data structures to prevent race conditions. Developed a custom protocol using JSON serialization for real-time robot control, optimizing network efficiency and later migrating to HTTP. Applied layered architecture and SOLID principles, improving maintainability and scalability, with a dynamic UI built using Turtle for visual representation of in-game interactions.",
+        "technologies": ["Java", "Multithreading", "Client-Server", "JSON", "HTTP", "SOLID Principles", "Turtle"]
+      }
+    ],
+    "certifications": [
+      "HackerRank Certifications: Java (Basic), Problem Solving with Java (Intermediate) 2024",
+      "Medallion - WeThinkCode Systems Development Semester 1 & 2 Top 10 Performer 2024"
+    ]
+  }

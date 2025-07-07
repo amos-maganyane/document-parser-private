@@ -2,33 +2,61 @@
     "Google": [
         "Google LLC",
         "Google Inc.",
-        "Alphabet"
+        "Alphabet",
+        "Alphabet Inc.",
+        "Google Corp.",
+        "Google Corporation",
+        "Google (Alphabet Inc.)",
+        "Google (Alphabet)"
     ],
     "Microsoft": [
         "Microsoft Corporation",
-        "MSFT"
+        "MSFT",
+        "Microsoft Inc.",
+        "Microsoft Corp",
+        "Microsoft Corporation (MSFT)",
+        "Microsoft Corp."
     ],
     "Amazon": [
         "Amazon.com",
-        "Amazon Inc"
+        "Amazon Inc",
+        "Amazon Web Services",
+        "AWS",
+        "Amazon.com Inc.",
+        "Amazon.com, Inc."
     ],
     "Apple": [
         "Apple Inc.",
-        "Apple Computer"
+        "Apple Computer",
+        "Apple Inc",
+        "Apple Inc.",
+        "Apple Computer, Inc.",
+        "Apple Inc. (AAPL)",
+        "Apple Inc. (AAPL)" 
     ],
     "Meta": [
         "Facebook",
         "Facebook Inc",
-        "Meta Platforms"
+        "Meta Platforms",
+        "Meta Platforms Inc.",
+        "Meta Platforms, Inc.",
+        "Meta Inc.",
+        "Meta Platforms, Inc."
     ],
     "Enviro365 IT Solutions": [
-        "Enviro365"
+        "Enviro365",
+        "Enviro365 IT",
+        "Enviro365 IT Solutions (Pty) Ltd"
     ],
     "Scale AI": [
-        "Scale"
+        "Scale",
+        "Scale.ai",
+        "Scale AI Inc"
     ],
     "WeThinkCode": [
         "WethinkCode",
-        "WeThinkCode_"
+        "WeThinkCode_",
+        "WeThink Code"
     ]
+    
 }

@@ -19,8 +19,10 @@ class ExperienceNormalizer:
         self.patterns = self._load_patterns(patterns_path)
         self.company_mapping = self._load_mapping(os.path.join(data_dir, "companies.json"))
         self.title_mapping = self._load_mapping(os.path.join(data_dir, "titles.json"))
+        self.position_mapping = self._load_mapping(os.path.join(data_dir, "titles.json"))
         self.company_index = self._create_index(self.company_mapping)
         self.title_index = self._create_index(self.title_mapping)
+        self.position_index = self._create_index(self.position_mapping)
         
         # Load normalization settings
         self.normalization_settings = self.patterns.get('experience_normalization', {})
@@ -81,13 +83,13 @@ class ExperienceNormalizer:
         title_abbrevs = self.patterns.get('experience_patterns', {}).get('title_abbreviations', {})
         
         # First pass: expand compound abbreviations (e.g., "Sr. SWE")
-        for abbrev, full in title_abbrevs.items():
+        for abbrev, full in title_abbrevs:
             if " " in abbrev:  # This identifies compound patterns
                 pattern = abbrev.replace(" ", "\\s+")  # Allow flexible whitespace
                 expanded = re.sub(f'\\b{pattern}\\b', full, expanded, flags=re.IGNORECASE)
         
         # Second pass: expand individual abbreviations
-        for abbrev, full in title_abbrevs.items():
+        for abbrev, full in title_abbrevs:
             if " " not in abbrev:  # This identifies single-word patterns
                 # Handle optional periods in abbreviations
                 pattern = abbrev.replace(".", "\\.?")  # Make periods optional
@@ -213,7 +215,7 @@ class ExperienceNormalizer:
         threshold = self.company_threshold if mapping is self.company_mapping else self.title_threshold
         result = process.extractOne(
             text, 
-            self.company_index if mapping is self.company_mapping else self.title_index,
+            self.company_index if mapping is self.company_mapping else self.position_index,
             scorer=fuzz.WRatio,
             score_cutoff=threshold
         )
